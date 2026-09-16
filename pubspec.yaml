@@ -1,0 +1,59 @@
+name: partflow_app
+description: "A graduation project for car spare parts platform."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  flutter_dotenv: ^5.1.0
+
+  # --- Backend & API Connectivity ---
+  # For connecting to the Node.js REST API
+  http: ^1.6.0
+
+  # For handling JSON data from the backend easily
+  json_annotation: ^4.8.1
+
+  # For saving the login session (JWT) securely on the device
+  flutter_secure_storage: ^9.0.0
+
+  # For saving simple settings like user_id and roles
+  shared_preferences: ^2.5.5
+
+  # --- UI & Icons ---
+  cupertino_icons: ^1.0.6
+  font_awesome_flutter: ^10.6.0
+
+  # For showing success/error toast notifications
+  fluttertoast: ^8.2.4
+
+  # --- Document Handling & Verification ---
+  # Allows the Admin to open PDF/Image URLs in a browser
+  url_launcher: ^6.3.2
+
+  # Allows the store to pick a document (PDF/Image) from their phone
+  file_picker: ^8.3.7
+
+  # Needed for the Flutter app to talk to Supabase Storage
+  supabase_flutter: ^2.12.4
+  image_picker: ^1.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # For generating JSON serialization code
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true
+  assets:
+      - .env
+  #   - assets/images/
