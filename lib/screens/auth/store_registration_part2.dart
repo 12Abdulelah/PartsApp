@@ -65,7 +65,7 @@ class _StoreRegistrationPart2State extends State<StoreRegistrationPart2> {
     setState(() => _isLoading = true);
 
     try {
-      String? publicUrl;
+      String? documentPath;
       final String extension = _pickedFile!.extension ?? 'pdf';
       final fileName = 'cr_${DateTime.now().millisecondsSinceEpoch}.$extension';
 
@@ -77,9 +77,7 @@ class _StoreRegistrationPart2State extends State<StoreRegistrationPart2> {
           .from('store-docs')
           .upload(fileName, fileToUpload);
 
-      publicUrl = Supabase.instance.client.storage
-          .from('store-docs')
-          .getPublicUrl(fileName);
+      documentPath = fileName;
 
       final response = await ApiService().registerUser(
         username: _usernameCtrl.text.trim(),
@@ -89,7 +87,7 @@ class _StoreRegistrationPart2State extends State<StoreRegistrationPart2> {
         storeName: widget.storeName,
         commercialRegistration: widget.crNumber,
         cityId: int.tryParse(_cityCtrl.text) ?? 1,
-        crDocumentUrl: publicUrl,
+        crDocumentUrl: documentPath,
       );
 
       if (response.statusCode == 201) {
@@ -104,7 +102,7 @@ class _StoreRegistrationPart2State extends State<StoreRegistrationPart2> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}"), backgroundColor: Colors.red),
+        const SnackBar(content: Text("Registration failed. Please try again."), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
