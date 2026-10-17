@@ -10,7 +10,16 @@ import '../models/review.dart';
 
 class ApiService {
   // 1. الرابط الأساسي
-  final String baseUrl = "http://10.0.2.2:3000";
+  static const String configuredApiUrl = String.fromEnvironment('API_BASE_URL');
+  final String baseUrl = configuredApiUrl.isNotEmpty
+      ? configuredApiUrl
+      : (kDebugMode ? 'http://10.0.2.2:3000' : '');
+
+  ApiService() {
+    if (!kDebugMode && !baseUrl.startsWith('https://')) {
+      throw StateError('Release builds require HTTPS API_BASE_URL.');
+    }
+  }
 
   // 2. دالة جلب القوائم للقنوات
   Future<List<dynamic>> getData(String endpoint) async {
@@ -23,18 +32,15 @@ class ApiService {
         headers: {"Content-Type": "application/json"},
       );
 
-      print("SERVER RESPONDED WITH: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
         if (data.isNotEmpty) {
-          print("DATA RECEIVED: ${data[0]}");
         }
         return data;
       }
       return [];
     } catch (e) {
-      print("CONNECTION ERROR: $e");
       return [];
     }
   }
@@ -65,7 +71,6 @@ class ApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print(" CONNECTION ERROR: $e");
       return false;
     }
   }
@@ -100,11 +105,9 @@ class ApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
-        print("Error: ${response.statusCode}");
         return null;
       }
     } catch (e) {
-      print("ApiService Error: $e");
       return null;
     }
   }
@@ -132,14 +135,12 @@ class ApiService {
         // We save the Numeric ID
         if (data['admin_id'] != null) {
           await prefs.setInt('admin_numeric_id', data['admin_id']);
-          print(" Saved Numeric Admin ID: ${data['admin_id']}");
         }
 
         return data;
       }
       return null;
     } catch (e) {
-      print("Error fetching profile: $e");
       return null;
     }
   }
@@ -173,13 +174,11 @@ class ApiService {
       // Wipe Remnants
       await prefs.remove('user_id');
       await prefs.remove('my_store_id');
-      print("MEMORY CLEARED: Starting fresh for new user.");
 
 
       final String? userId = responseData['user']?['id']?.toString();
       if (userId != null) {
         await prefs.setString('user_id', userId);
-        print("SUCCESS: User UUID $userId saved.");
       }
 
 
@@ -200,9 +199,7 @@ class ApiService {
 
         if (storeId != null) {
           await prefs.setInt('my_store_id', storeId);
-          print("SUCCESS: Saved Store ID $storeId to memory.");
         } else {
-          print(" WARNING: User is a vendor but NO Store ID was found in the response!");
 
         }
       }
@@ -230,7 +227,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching store feedback: $e");
       return [];
     }
   }
@@ -255,12 +251,9 @@ class ApiService {
       );
 
       // 🟢 ADD THIS PRINT STATEMENT
-      print(" SERVER STATUS CODE: ${response.statusCode}");
-      print(" SERVER RESPONSE: ${response.body}");
 
       return response.statusCode == 201;
     } catch (e) {
-      print("Complaint Error: $e");
       return false;
     }
   }
@@ -290,7 +283,6 @@ class ApiService {
       final String? userId = prefs.getString('user_id'); // UUID saved at login
 
       if (userId == null) {
-        print("🔎 DEBUG: No user_id found in memory.");
         return [];
       }
 
@@ -302,14 +294,11 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print("$data");
         return data; // This returns the list of cart_items
       } else {
-        print("Server Error fetching cart: ${response.statusCode}");
         return [];
       }
     } catch (e) {
-      print("❌ Connection Error in getCartItems: $e");
       return [];
     }
   }
@@ -322,7 +311,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print("Update Error: $e");
       return false;
     }
   }
@@ -331,7 +319,6 @@ class ApiService {
       final String? userId = await getUserId();
 
       // 🕵️‍♂️ DEBUG 1: Is the ID correct?
-      print("🕵️‍♂️ DEBUG: App is searching for orders for User UUID: '$userId'");
 
       final profileResponse = await http.get(
         Uri.parse('$baseUrl/api/auth/profile/$userId'),
@@ -344,9 +331,6 @@ class ApiService {
       );
 
       // 🕵️‍♂️ DEBUG 2: What is the RAW server response?
-      print("📡 PROFILE STATUS: ${profileResponse.statusCode}");
-      print("📡 ORDERS STATUS: ${ordersResponse.statusCode}");
-      print("📦 RAW ORDERS BODY: ${ordersResponse.body}");
 
       final profileData = profileResponse.statusCode == 200 ? jsonDecode(profileResponse.body) : {};
       final ordersData = ordersResponse.statusCode == 200 ? jsonDecode(ordersResponse.body) : [];
@@ -356,7 +340,6 @@ class ApiService {
         "orders": ordersData,
       };
     } catch (e) {
-      print("❌ FATAL ERROR: $e");
       return {"profile": {}, "orders": []};
     }
   }
@@ -367,10 +350,8 @@ class ApiService {
       final int? storeId = prefs.getInt('my_store_id');
 
 
-      print("🔎 DEBUG: Vendor is logged in with Store ID: $storeId");
 
       if (storeId == null) {
-        print("🕵️‍♂️ DEBUG: No store_id found in memory for this vendor.");
         return [];
       }
 
@@ -385,7 +366,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print("❌ Vendor API Error: $e");
       return [];
     }
   }
@@ -396,7 +376,6 @@ class ApiService {
       headers: {"Content-Type": "application/json"},
       body: jsonEncode(review.toJson()), // This calls the mapping we made in the model
     );
-    print("📡 REVIEW STATUS: ${response.statusCode}");
     return response.statusCode == 201;
   }
 
@@ -483,10 +462,8 @@ class ApiService {
         }),
       );
 
-      print("📡 CHECKOUT STATUS: ${response.statusCode}");
       return response.statusCode == 201;
     } catch (e) {
-      print("❌ CHECKOUT ERROR: $e");
       return false;
     }
   }
@@ -507,7 +484,6 @@ class ApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print("❌ Error updating address: $e");
       return false;
     }
   }
@@ -522,7 +498,6 @@ class ApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print("❌ API Error: $e");
       return false;
     }
   }
@@ -541,7 +516,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print("❌ API ERROR (Orders): $e");
       return [];
     }
   }
@@ -559,7 +533,6 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print("❌ History Error: $e");
       return [];
     }
   }
@@ -573,11 +546,9 @@ class ApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        print("Server Error: ${response.statusCode} - ${response.body}");
         throw Exception('Failed to load inventory');
       }
     } catch (e) {
-      print("Error: $e");
       return [];
     }
   }
@@ -640,14 +611,11 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        print("Complaint resolved successfully!");
         return true;
       } else {
-        print("Failed to resolve: ${response.body}");
         return false;
       }
     } catch (e) {
-      print("Error in resolveComplaint: $e");
       return false;
     }
   }
@@ -671,7 +639,6 @@ class ApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print("API Error: $e");
       return false;
     }
   }
@@ -690,11 +657,9 @@ class ApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        print("Vendor Complaints Error: ${response.statusCode}");
         return [];
       }
     } catch (e) {
-      print("Connection error fetching vendor complaints: $e");
       return [];
     }
   }
@@ -713,7 +678,6 @@ class ApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print("Error resolving vendor complaint: $e");
       return false;
     }
   }
@@ -743,7 +707,6 @@ class ApiService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print("Error updating product: $e");
       return false;
     }
   }
@@ -764,10 +727,8 @@ class ApiService {
       // 🔗 Get the Public URL
       final String publicUrl = supabase.storage.from('pic').getPublicUrl(path);
 
-      print("Upload Success! URL: $publicUrl");
       return publicUrl;
     } catch (e) {
-      print("Upload Error: $e");
       return null;
     }
   }
@@ -780,7 +741,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print("Error fetching vehicle models: $e");
       return null;
     }
   }
@@ -813,7 +773,6 @@ class ApiService {
       );
       return response.statusCode == 201;
     } catch (e) {
-      print("Error adding product: $e");
       return false;
     }
 
@@ -828,11 +787,9 @@ class ApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        print("VIN Search Error: ${response.statusCode}");
         return null;
       }
     } catch (e) {
-      print("Connection Error: $e");
       return null;
     }
   }
@@ -854,11 +811,9 @@ class ApiService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        print("Profile Error: ${response.statusCode}");
         return null;
       }
     } catch (e) {
-      print("Error fetching profile: $e");
       return null;
     }
   }
@@ -888,10 +843,8 @@ class ApiService {
         }),
       );
 
-      print("📡 STATUS UPDATE: ${response.statusCode} - ${response.body}");
       return response.statusCode == 200;
     } catch (e) {
-      print("❌ Update Error: $e");
       return false;
     }
   }
